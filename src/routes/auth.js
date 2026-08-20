@@ -2,10 +2,11 @@ const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const { asyncHandler } = require('../utils/asyncHandler');
 
 // Single admin login for now. See src/middleware/auth.js for the plan to
 // replace this with real per-resident sessions later.
-router.post('/admin-login', async (req, res) => {
+router.post('/admin-login', asyncHandler(async (req, res) => {
   const { username, password } = req.body;
 
   if (username !== process.env.ADMIN_USERNAME) {
@@ -17,6 +18,6 @@ router.post('/admin-login', async (req, res) => {
 
   const token = jwt.sign({ role: 'admin', username }, process.env.JWT_SECRET, { expiresIn: '12h' });
   res.json({ token });
-});
+}));
 
 module.exports = router;
