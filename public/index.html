@@ -79,7 +79,7 @@
   /* ---------- nav ---------- */
   .brass-nav{
     position:fixed; top:0; left:0; right:0; z-index:300;
-    display:flex; align-items:center; justify-content:space-between;
+    display:flex; align-items:center; justify-content:space-between; gap:24px;
     padding:16px 5vw;
     background:linear-gradient(180deg, rgba(14,21,23,0.92), rgba(14,21,23,0.65));
     border-bottom:1px solid var(--harbor-line);
@@ -97,6 +97,27 @@
   }
   .brass-nav a:hover{color:var(--brass-light);}
   .nav-toggle{display:none;}
+
+  .nav-auth{ display:flex; align-items:center; gap:12px; flex-shrink:0; }
+  .nav-login-btn{
+    font-family:var(--mono); font-size:11px; letter-spacing:0.1em; text-transform:uppercase;
+    padding:8px 16px; border:1px solid var(--brass); border-radius:2px;
+    color:var(--brass-light); background:transparent; white-space:nowrap;
+    transition:background 0.2s ease;
+  }
+  .nav-login-btn:hover{ background:rgba(184,146,63,0.12); }
+  .nav-user{ display:flex; align-items:center; gap:8px; }
+  .nav-avatar{ width:26px; height:26px; border-radius:50%; border:1px solid var(--brass); display:block; }
+  .nav-user-name{ font-family:var(--mono); font-size:12px; color:var(--ink-dim); white-space:nowrap; }
+  .nav-role-badge{
+    font-family:var(--mono); font-size:9px; letter-spacing:0.08em; text-transform:uppercase;
+    padding:2px 7px; border:1px solid var(--brass); border-radius:2px; color:var(--brass-light);
+  }
+  .nav-logout-btn{
+    font-family:var(--mono); font-size:10px; color:var(--ink-dim); background:none; border:none;
+    text-decoration:underline; cursor:pointer; padding:0;
+  }
+  .nav-logout-btn:hover{ color:var(--brass-light); }
 
   /* ---------- hero ---------- */
   .hero{
@@ -493,6 +514,7 @@
     <li><a href="#almanac" class="editable" contenteditable="false">Almanac</a></li>
     <li><a href="#residency" class="editable" contenteditable="false">Residency</a></li>
   </ul>
+  <div class="nav-auth" id="navAuth"></div>
 </nav>
 
 <header class="hero">
@@ -875,9 +897,37 @@
     }
   }
 
+  async function renderAuthState() {
+    const container = document.getElementById('navAuth');
+    try {
+      const res = await fetch('/api/auth/me');
+      if (res.ok) {
+        const user = await res.json();
+        const name = escapeHtml(user.display_name || user.discord_username || 'Resident');
+        container.innerHTML = `
+          <div class="nav-user">
+            ${user.avatar_url ? `<img class="nav-avatar" src="${user.avatar_url}" alt="">` : ''}
+            <span class="nav-user-name">${name}</span>
+            <span class="nav-role-badge">${escapeHtml(user.role)}</span>
+            <button class="nav-logout-btn" id="navLogoutBtn" type="button">Log out</button>
+          </div>
+        `;
+        document.getElementById('navLogoutBtn').addEventListener('click', async () => {
+          await fetch('/api/auth/logout', { method: 'POST' });
+          location.reload();
+        });
+        return;
+      }
+    } catch (err) {
+      // network hiccup — fall through to the logged-out state below
+    }
+    container.innerHTML = `<a class="nav-login-btn" href="/api/auth/discord/login">Login with Discord</a>`;
+  }
+
   loadRules();
   loadNews();
   loadResidents();
+  renderAuthState();
 
   // ---- edit mode ----
   function setStatus(msg){
