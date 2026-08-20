@@ -1,23 +1,23 @@
-const express = require('express');
-const router = express.Router();
-const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
-const { asyncHandler } = require('../utils/asyncHandler');
 
-// Single admin login for now. See src/middleware/auth.js for the plan to
-// replace this with real per-resident sessions later.
-router.post('/admin-login', asyncHandler(async (req, res) => {
-  const { username, password } = req.body;
+// Minimal auth for now: a single admin login (env-configured) issues a JWT.
+// This is a placeholder — when Discord OAuth account linking is wired up
+// (matching the pattern from the Halloweentown site), swap this for real
+// per-user sessions and check `req.user.role` instead of a single admin flag.
 
-  if (username !== process.env.ADMIN_USERNAME) {
-    return res.status(401).json({ error: 'Invalid credentials' });
+function requireAdmin(req, res, next) {
+  const header = req.headers.authorization || '';
+  const token = header.startsWith('Bearer ') ? header.slice(7) : null;
+  if (!token) return res.status(401).json({ error: 'Missing token' });
+
+  try {
+    const payload = jwt.verify(token, process.env.JWT_SECRET);
+    if (payload.role !== 'admin') return res.status(403).json({ error: 'Admin access required' });
+    req.user = payload;
+    next();
+  } catch (err) {
+    return res.status(401).json({ error: 'Invalid or expired token' });
   }
+}
 
-  const match = await bcrypt.compare(password || '', process.env.ADMIN_PASSWORD_HASH || '');
-  if (!match) return res.status(401).json({ error: 'Invalid credentials' });
-
-  const token = jwt.sign({ role: 'admin', username }, process.env.JWT_SECRET, { expiresIn: '12h' });
-  res.json({ token });
-}));
-
-module.exports = router;
+module.exports = { requireAdmin };
