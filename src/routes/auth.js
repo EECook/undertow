@@ -45,6 +45,14 @@ router.get('/discord/callback', asyncHandler(async (req, res) => {
   const appRole = discord.resolveAppRole(member ? member.roles : []);
   const avatarUrl = discord.avatarUrl(discordUser);
 
+  // Temporary diagnostic logging — remove once role resolution is confirmed
+  // working. Safe to leave in short-term: no secrets, just IDs.
+  console.log('[discord] login attempt for', discordUser.username, discordUser.id);
+  console.log('[discord] guild member found:', !!member);
+  console.log('[discord] their Discord role IDs:', member ? member.roles : '(not a guild member)');
+  console.log('[discord] raw DISCORD_ROLE_MAP env var:', process.env.DISCORD_ROLE_MAP);
+  console.log('[discord] resolved app role:', appRole);
+
   // Upsert into users — first login creates the account, later logins just
   // refresh username/avatar/role in case any of those changed on Discord's side.
   const [existingRows] = await pool.query(`SELECT id FROM users WHERE discord_id = ?`, [discordUser.id]);
