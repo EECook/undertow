@@ -1,6 +1,7 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
+const cookieParser = require('cookie-parser');
 const path = require('path');
 
 const { testConnection } = require('./db');
@@ -17,6 +18,7 @@ const app = express();
 
 app.use(cors());
 app.use(express.json());
+app.use(cookieParser());
 app.use('/uploads', express.static(path.resolve(uploadDir)));
 app.use(express.static(path.join(__dirname, '..', 'public')));
 
@@ -26,7 +28,17 @@ app.get('/api', (req, res) => {
   res.json({
     name: 'The Undertow API',
     status: 'running',
-    endpoints: ['/api/health', '/api/profiles', '/api/characters', '/api/gallery', '/api/news', '/api/rules', '/api/auth/admin-login'],
+    endpoints: [
+      '/api/health',
+      '/api/auth/discord/login',
+      '/api/auth/me',
+      '/api/auth/logout',
+      '/api/profiles',
+      '/api/characters',
+      '/api/gallery',
+      '/api/news',
+      '/api/rules',
+    ],
   });
 });
 
