@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { pool } = require('../db');
 const { upload } = require('../middleware/upload');
+const { requireAuth, requireRole } = require('../middleware/auth');
 const { asyncHandler } = require('../utils/asyncHandler');
 
 // List all resident profiles (public directory)
@@ -26,9 +27,9 @@ router.get('/:id', asyncHandler(async (req, res) => {
   res.json({ ...user, characters });
 }));
 
-// Create a profile (e.g. on first Discord/Minecraft link — wire this into
-// the OAuth callback once that's built)
-router.post('/', asyncHandler(async (req, res) => {
+// Accounts are normally created automatically on Discord login — this stays
+// around for admins to hand-create an entry if ever needed.
+router.post('/', requireRole('admin'), asyncHandler(async (req, res) => {
   const { discord_id, discord_username, minecraft_username, minecraft_uuid, display_name, bio } = req.body;
   const [result] = await pool.query(
     `INSERT INTO users (discord_id, discord_username, minecraft_username, minecraft_uuid, display_name, bio)
@@ -38,19 +39,25 @@ router.post('/', asyncHandler(async (req, res) => {
   res.status(201).json({ id: result.insertId });
 }));
 
-// Update a profile's bio/display name
-router.patch('/:id', asyncHandler(async (req, res) => {
-  const { display_name, bio } = req.body;
-  await pool.query(`UPDATE users SET display_name = ?, bio = ? WHERE id = ?`, [
-    display_name,
-    bio,
-    req.params.id,
-  ]);
+// Only you (or a moderator+) can edit your own profile.
+function requireSelfOrModerator(req, res, next) {
+  const targetId = Number(req.params.id);
+  const isSelf = req.user.id === targetId;
+  const isModPlus = ['moderator', 'admin'].includes(req.user.role);
+  if (!isSelf && !isModPlus) return res.status(403).json({ error: 'Not your profile' });
+  next();
+}
+
+router.patch('/:id', requireAuth, requireSelfOrModerator, asyncHandler(async (req, res) => {
+  const { display_name, bio, minecraft_username } = req.body;
+  await pool.query(
+    `UPDATE users SET display_name = ?, bio = ?, minecraft_username = COALESCE(?, minecraft_username) WHERE id = ?`,
+    [display_name, bio, minecraft_username, req.params.id]
+  );
   res.json({ ok: true });
 }));
 
-// Upload/replace a profile picture
-router.post('/:id/avatar', upload.single('avatar'), asyncHandler(async (req, res) => {
+router.post('/:id/avatar', requireAuth, requireSelfOrModerator, upload.single('avatar'), asyncHandler(async (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
   const avatarUrl = `/uploads/${req.file.filename}`;
   await pool.query(`UPDATE users SET avatar_url = ? WHERE id = ?`, [avatarUrl, req.params.id]);
