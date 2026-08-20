@@ -21,6 +21,14 @@ app.use('/uploads', express.static(path.resolve(uploadDir)));
 
 app.get('/api/health', (req, res) => res.json({ ok: true }));
 
+app.get('/', (req, res) => {
+  res.json({
+    name: 'The Undertow API',
+    status: 'running',
+    endpoints: ['/api/health', '/api/profiles', '/api/characters', '/api/gallery', '/api/news', '/api/rules', '/api/auth/admin-login'],
+  });
+});
+
 app.use('/api/auth', authRoutes);
 app.use('/api/profiles', profileRoutes);
 app.use('/api/characters', characterRoutes);
@@ -41,6 +49,10 @@ testConnection()
     app.listen(PORT, () => console.log(`[undertow] API listening on port ${PORT}`));
   })
   .catch((err) => {
-    console.error('[undertow] Failed to connect to database on boot:', err.message);
+    console.error('[undertow] Failed to connect to database on boot.');
+    console.error('[undertow]   code:', err.code);
+    console.error('[undertow]   errno:', err.errno);
+    console.error('[undertow]   message:', err.message || '(empty — see full error below)');
+    console.error('[undertow]   full error object:', err);
     process.exit(1);
   });
