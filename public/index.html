@@ -309,6 +309,49 @@
   }
   .almanac-card .sub{ font-family:var(--body); font-style:italic; font-size:13px; color:var(--ink-dim); margin-top:10px; }
 
+  /* ---------- dynamic sections (rules / news / residents) ---------- */
+  .rules-section h2, .news-section h2, .residents-section h2{
+    text-align:center; font-size:34px; color:var(--parchment); margin-bottom:8px;
+  }
+  .rules-section .eyebrow, .news-section .eyebrow, .residents-section .eyebrow{ text-align:center; }
+
+  .loading-text, .empty-state{
+    text-align:center; font-style:italic; color:var(--ink-dim); margin-top:50px;
+    font-family:var(--body); font-size:16px;
+  }
+
+  .rules-list{ margin-top:60px; display:grid; gap:24px; }
+  .rules-card{
+    background:var(--panel-teal-solid); border:1px solid var(--harbor-line);
+    padding:32px 36px; border-radius:2px;
+  }
+  .rules-card h3{ font-size:24px; color:var(--parchment); margin-bottom:12px; }
+  .rules-card p{ color:var(--ink-dim); white-space:pre-wrap; margin:0; }
+
+  .news-list{ margin-top:60px; display:grid; grid-template-columns:repeat(auto-fill, minmax(280px, 1fr)); gap:28px; }
+  .news-card{
+    background:var(--panel-teal-solid); border:1px solid var(--harbor-line);
+    border-radius:2px; overflow:hidden;
+  }
+  .news-cover{ width:100%; height:150px; background-size:cover; background-position:center; }
+  .news-body{ padding:22px 24px; }
+  .news-body h3{ font-size:20px; color:var(--parchment); margin-bottom:8px; }
+  .news-meta{ font-family:var(--mono); font-size:11px; letter-spacing:0.08em; color:var(--brass-light); text-transform:uppercase; margin:0; }
+
+  .residents-grid{ margin-top:60px; display:grid; grid-template-columns:repeat(auto-fill, minmax(220px, 1fr)); gap:28px; }
+  .resident-card{
+    background:var(--panel-teal-solid); border:1px solid var(--harbor-line);
+    border-radius:2px; padding:28px 22px; text-align:center;
+  }
+  .resident-avatar{
+    width:72px; height:72px; border-radius:50%; margin:0 auto 16px;
+    background:linear-gradient(160deg,#3a4d4f,#111c1e 70%) center/cover;
+    border:2px solid var(--brass);
+  }
+  .resident-card h3{ font-size:19px; color:var(--parchment); margin-bottom:4px; }
+  .resident-meta{ font-family:var(--mono); font-size:11px; color:var(--brass-light); margin:0 0 10px; }
+  .resident-bio{ font-size:14px; color:var(--ink-dim); margin:0; }
+
   /* ---------- residency ---------- */
   .residency{ text-align:center; }
   .residency h2{ font-size:38px; color:var(--parchment); margin-bottom:16px; }
@@ -444,6 +487,9 @@
     <li><a href="#welcome" class="editable" contenteditable="false">Welcome</a></li>
     <li><a href="#history" class="editable" contenteditable="false">History</a></li>
     <li><a href="#notices" class="editable" contenteditable="false">Notices</a></li>
+    <li><a href="#rules" class="editable" contenteditable="false">Rules</a></li>
+    <li><a href="#news" class="editable" contenteditable="false">News</a></li>
+    <li><a href="#residents" class="editable" contenteditable="false">Residents</a></li>
     <li><a href="#almanac" class="editable" contenteditable="false">Almanac</a></li>
     <li><a href="#residency" class="editable" contenteditable="false">Residency</a></li>
   </ul>
@@ -576,8 +622,32 @@
   </div>
 </section>
 
+<section class="section rules-section reveal" id="rules">
+  <p class="eyebrow">04 — Rules &amp; Guidelines</p>
+  <h2>The Harbor Ledger of Conduct</h2>
+  <div id="rules-list" class="rules-list">
+    <p class="loading-text">Consulting the ledger…</p>
+  </div>
+</section>
+
+<section class="section news-section reveal" id="news">
+  <p class="eyebrow">05 — Harbor Dispatch</p>
+  <h2>Latest News</h2>
+  <div id="news-list" class="news-list">
+    <p class="loading-text">Checking the wire…</p>
+  </div>
+</section>
+
+<section class="section residents-section reveal" id="residents">
+  <p class="eyebrow">06 — Residents</p>
+  <h2>Who's Settled Here</h2>
+  <div id="residents-list" class="residents-grid">
+    <p class="loading-text">Counting heads…</p>
+  </div>
+</section>
+
 <section class="section almanac reveal" id="almanac">
-  <p class="eyebrow editable" contenteditable="false">04 — Harbor Almanac</p>
+  <p class="eyebrow editable" contenteditable="false">07 — Harbor Almanac</p>
   <h2 class="editable" contenteditable="false" style="text-align:center;">Today at the Undertow</h2>
   <div class="almanac-grid">
     <div class="almanac-card">
@@ -604,7 +674,7 @@
 </section>
 
 <section class="section residency reveal" id="residency">
-  <p class="eyebrow editable" contenteditable="false">05 — Join the Undertow</p>
+  <p class="eyebrow editable" contenteditable="false">08 — Join the Undertow</p>
   <h2 class="editable" contenteditable="false">Petition for Residency</h2>
   <p class="lead editable" contenteditable="false">Complete the form below to be considered for lodging within town limits. The Authority reviews all petitions personally — eventually.</p>
   <div class="petition">
@@ -715,6 +785,99 @@
       setTimeout(() => p.remove(), 1900);
     });
   }
+
+  // ---- live data from the Undertow API ----
+  // Rules, News, and Residents are pulled from the real database — they are
+  // NOT part of the in-page editable content, since editing them here
+  // wouldn't write back to the database. Edit rules/news/profiles through
+  // the API (or the admin console, once built) instead.
+  // Same-origin now — the API and the site are served by the same Express
+  // app, so this can just be empty (relative URLs like /api/rules).
+  const API_BASE = '';
+
+  function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str ?? '';
+    return div.innerHTML;
+  }
+
+  function formatDate(iso) {
+    if (!iso) return '';
+    return new Date(iso).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
+  }
+
+  async function loadRules() {
+    const container = document.getElementById('rules-list');
+    try {
+      const res = await fetch(`${API_BASE}/api/rules`);
+      if (!res.ok) throw new Error('bad response');
+      const sections = await res.json();
+      if (!sections.length) {
+        container.innerHTML = '<p class="empty-state">No rules have been posted yet.</p>';
+        return;
+      }
+      container.innerHTML = sections
+        .map(s => `<div class="rules-card"><h3>${escapeHtml(s.title)}</h3><p>${escapeHtml(s.content)}</p></div>`)
+        .join('');
+    } catch (err) {
+      container.innerHTML = '<p class="empty-state">The ledger is unreachable right now — try again shortly.</p>';
+    }
+  }
+
+  async function loadNews() {
+    const container = document.getElementById('news-list');
+    try {
+      const res = await fetch(`${API_BASE}/api/news`);
+      if (!res.ok) throw new Error('bad response');
+      const posts = await res.json();
+      if (!posts.length) {
+        container.innerHTML = '<p class="empty-state">No dispatches posted yet. Check back after the next incident.</p>';
+        return;
+      }
+      container.innerHTML = posts
+        .map(p => `
+          <div class="news-card">
+            ${p.cover_image_url ? `<div class="news-cover" style="background-image:url('${API_BASE}${p.cover_image_url}')"></div>` : ''}
+            <div class="news-body">
+              <h3>${escapeHtml(p.title)}</h3>
+              <p class="news-meta">${p.author_name ? escapeHtml(p.author_name) + ' · ' : ''}${formatDate(p.published_at)}</p>
+            </div>
+          </div>
+        `)
+        .join('');
+    } catch (err) {
+      container.innerHTML = '<p class="empty-state">The wire has gone quiet — try again shortly.</p>';
+    }
+  }
+
+  async function loadResidents() {
+    const container = document.getElementById('residents-list');
+    try {
+      const res = await fetch(`${API_BASE}/api/profiles`);
+      if (!res.ok) throw new Error('bad response');
+      const residents = await res.json();
+      if (!residents.length) {
+        container.innerHTML = '<p class="empty-state">No residents documented yet — the town is still quiet.</p>';
+        return;
+      }
+      container.innerHTML = residents
+        .map(r => `
+          <div class="resident-card">
+            <div class="resident-avatar" style="${r.avatar_url ? `background-image:url('${API_BASE}${r.avatar_url}')` : ''}"></div>
+            <h3>${escapeHtml(r.display_name || r.minecraft_username || r.discord_username || 'Unnamed Resident')}</h3>
+            ${r.minecraft_username ? `<p class="resident-meta">${escapeHtml(r.minecraft_username)}</p>` : ''}
+            ${r.bio ? `<p class="resident-bio">${escapeHtml(r.bio)}</p>` : ''}
+          </div>
+        `)
+        .join('');
+    } catch (err) {
+      container.innerHTML = '<p class="empty-state">The registry is unreachable right now.</p>';
+    }
+  }
+
+  loadRules();
+  loadNews();
+  loadResidents();
 
   // ---- edit mode ----
   function setStatus(msg){
