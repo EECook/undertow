@@ -44,6 +44,16 @@ app.use((err, req, res, next) => {
 
 const PORT = process.env.PORT || 3000;
 
+// Extra safety net: log and survive anything that still slips past
+// asyncHandler (e.g. errors in code paths outside route handlers) instead
+// of silently crashing the whole app.
+process.on('unhandledRejection', (reason) => {
+  console.error('[undertow] Unhandled promise rejection:', reason);
+});
+process.on('uncaughtException', (err) => {
+  console.error('[undertow] Uncaught exception:', err);
+});
+
 testConnection()
   .then(() => {
     app.listen(PORT, () => console.log(`[undertow] API listening on port ${PORT}`));
