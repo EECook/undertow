@@ -12,10 +12,23 @@ const pool = mysql.createPool({
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0,
+  connectTimeout: 10000,
   ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : undefined,
 });
 
+// Reports which required env vars are present WITHOUT ever printing their
+// values — safe to log on every boot.
+function checkEnv() {
+  const required = ['DB_HOST', 'DB_PORT', 'DB_NAME', 'DB_USER', 'DB_PASSWORD'];
+  const status = {};
+  for (const key of required) {
+    status[key] = process.env[key] ? 'set' : 'MISSING';
+  }
+  return status;
+}
+
 async function testConnection() {
+  console.log('[db] Env var check:', checkEnv());
   const conn = await pool.getConnection();
   try {
     await conn.ping();
@@ -25,4 +38,4 @@ async function testConnection() {
   }
 }
 
-module.exports = { pool, testConnection };
+module.exports = { pool, testConnection, checkEnv };
