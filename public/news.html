@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>News — The Undertow</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>%E2%9A%93</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IM+Fell+English+SC&family=Crimson+Text:ital,wght@0,400;0,600;1,400&family=Special+Elite&family=Courier+Prime:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/site.css">
+</head>
+<body>
+
+<svg class="grain" width="100%" height="100%">
+  <filter id="noiseFilter"><feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="2" stitchTiles="stitch"/></filter>
+  <rect width="100%" height="100%" filter="url(#noiseFilter)"/>
+</svg>
+
+<nav class="brass-nav">
+  <div class="brand"><span>THE UNDERTOW</span> <span>HARBOR AUTHORITY · EST. 1891</span></div>
+  <ul>
+    <li><a href="/#welcome">Welcome</a></li>
+    <li><a href="/#history">History</a></li>
+    <li><a href="/#notices">Notices</a></li>
+    <li><a href="/rules.html">Rules</a></li>
+    <li><a href="/news.html">News</a></li>
+    <li><a href="/lore.html">Lore</a></li>
+    <li><a href="/#residents">Residents</a></li>
+    <li><a href="/#almanac">Almanac</a></li>
+    <li><a href="/#residency">Residency</a></li>
+    <li><a href="/#admin">Admin</a></li>
+  </ul>
+  <div class="nav-auth" id="navAuth"></div>
+</nav>
+
+<header class="page-header">
+  <p class="eyebrow">Harbor Dispatch</p>
+  <h1>News</h1>
+  <p class="tagline">Whatever the Authority has seen fit to make public. Read between the lines.</p>
+  <a class="back-home" href="/">&larr; Back to the harbor</a>
+</header>
+
+<section class="section news-section reveal">
+  <div id="news-list" class="news-list">
+    <p class="loading-text">Checking the wire…</p>
+  </div>
+</section>
+
+<footer>
+  <div class="seal">⚓ THE UNDERTOW HARBOR AUTHORITY</div>
+  <p>Est. 1891 · Reopened courtesy of the Coddiwomple Maritime Co.</p>
+  <p>The Authority is not responsible for losses incurred at sea, after dark, or at the intersection of the two.</p>
+</footer>
+
+<script src="/js/site.js"></script>
+<script>
+  async function loadNewsPage() {
+    const container = document.getElementById('news-list');
+    try {
+      const res = await fetch('/api/news');
+      if (!res.ok) throw new Error('bad response');
+      const posts = await res.json();
+      if (!posts.length) {
+        container.innerHTML = '<p class="empty-state">No dispatches posted yet. Check back after the next incident.</p>';
+        return;
+      }
+      container.innerHTML = posts
+        .map(
+          p => `
+          <div class="news-card">
+            ${p.cover_image_url ? `<div class="news-cover" style="background-image:url('${p.cover_image_url}')"></div>` : ''}
+            <div class="news-body">
+              <h3>${escapeHtml(p.title)}</h3>
+              <p class="news-meta">${p.author_name ? escapeHtml(p.author_name) + ' · ' : ''}${formatDate(p.published_at)}</p>
+            </div>
+          </div>
+        `
+        )
+        .join('');
+    } catch (err) {
+      container.innerHTML = '<p class="empty-state">The wire has gone quiet — try again shortly.</p>';
+    }
+  }
+  loadNewsPage();
+</script>
+
+</body>
+</html>
