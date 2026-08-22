@@ -20,16 +20,28 @@
 <nav class="brass-nav">
   <div class="brand"><span>THE UNDERTOW</span> <span>HARBOR AUTHORITY · EST. 1891</span></div>
   <ul>
-    <li><a href="/#welcome">Welcome</a></li>
-    <li><a href="/#history">History</a></li>
-    <li><a href="/#notices">Notices</a></li>
-    <li><a href="/rules.html">Rules</a></li>
-    <li><a href="/news.html">News</a></li>
-    <li><a href="/lore.html">Lore</a></li>
-    <li><a href="/#residents">Residents</a></li>
-    <li><a href="/#almanac">Almanac</a></li>
-    <li><a href="/#residency">Residency</a></li>
-    <li><a href="/#admin">Admin</a></li>
+    <li><a href="/">Home</a></li>
+    <li class="dropdown" id="dd-town">
+      <button class="nav-drop-btn" type="button" onclick="toggleDropdown('dd-town')">Town ▾</button>
+      <div class="dropdown-menu">
+        <a class="dropdown-item" href="/#welcome">Welcome</a>
+        <a class="dropdown-item" href="/#history">History</a>
+        <a class="dropdown-item" href="/#notices">Notices</a>
+        <div class="dropdown-separator"></div>
+        <a class="dropdown-item" href="/#residents">Residents</a>
+        <a class="dropdown-item" href="/#almanac">Almanac</a>
+        <a class="dropdown-item" href="/#residency">Residency</a>
+      </div>
+    </li>
+    <li class="dropdown" id="dd-archives">
+      <button class="nav-drop-btn" type="button" onclick="toggleDropdown('dd-archives')">Archives ▾</button>
+      <div class="dropdown-menu">
+        <a class="dropdown-item" href="/rules.html">Rules &amp; Guidelines</a>
+        <a class="dropdown-item" href="/lore.html">Lore &amp; Timeline</a>
+        <a class="dropdown-item" href="/news.html">News</a>
+      </div>
+    </li>
+    <li><a href="/admin.html">Admin</a></li>
   </ul>
   <div class="nav-auth" id="navAuth"></div>
 </nav>
