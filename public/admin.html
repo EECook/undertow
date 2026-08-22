@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin Console — The Undertow</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>%E2%9A%93</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IM+Fell+English+SC&family=Crimson+Text:ital,wght@0,400;0,600;1,400&family=Special+Elite&family=Courier+Prime:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/site.css">
+</head>
+<body>
+
+<svg class="grain" width="100%" height="100%">
+  <filter id="noiseFilter"><feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="2" stitchTiles="stitch"/></filter>
+  <rect width="100%" height="100%" filter="url(#noiseFilter)"/>
+</svg>
+
+<nav class="brass-nav">
+  <div class="brand"><span>THE UNDERTOW</span> <span>HARBOR AUTHORITY · EST. 1891</span></div>
+  <ul>
+    <li><a href="/">Home</a></li>
+    <li class="dropdown" id="dd-town">
+      <button class="nav-drop-btn" type="button" onclick="toggleDropdown('dd-town')">Town ▾</button>
+      <div class="dropdown-menu">
+        <a class="dropdown-item" href="/#welcome">Welcome</a>
+        <a class="dropdown-item" href="/#history">History</a>
+        <a class="dropdown-item" href="/#notices">Notices</a>
+        <div class="dropdown-separator"></div>
+        <a class="dropdown-item" href="/#residents">Residents</a>
+        <a class="dropdown-item" href="/#almanac">Almanac</a>
+        <a class="dropdown-item" href="/#residency">Residency</a>
+      </div>
+    </li>
+    <li class="dropdown" id="dd-archives">
+      <button class="nav-drop-btn" type="button" onclick="toggleDropdown('dd-archives')">Archives ▾</button>
+      <div class="dropdown-menu">
+        <a class="dropdown-item" href="/rules.html">Rules &amp; Guidelines</a>
+        <a class="dropdown-item" href="/lore.html">Lore &amp; Timeline</a>
+        <a class="dropdown-item" href="/news.html">News</a>
+      </div>
+    </li>
+    <li><a href="/admin.html">Admin</a></li>
+  </ul>
+  <div class="nav-auth" id="navAuth"></div>
+</nav>
+
+<header class="page-header">
+  <p class="eyebrow">Restricted Access</p>
+  <h1>Admin Console</h1>
+  <p class="tagline">For the Harbor Authority's eyes only. Manage the town's rules, lore, and dispatches from here.</p>
+  <a class="back-home" href="/">&larr; Back to the harbor</a>
+</header>
+
+<section class="section admin-page-section reveal">
+  <div id="admin-content">
+    <p class="loading-text">Checking credentials…</p>
+  </div>
+</section>
+
+<footer>
+  <div class="seal">⚓ THE UNDERTOW HARBOR AUTHORITY</div>
+  <p>Est. 1891 · Reopened courtesy of the Coddiwomple Maritime Co.</p>
+  <p>The Authority is not responsible for losses incurred at sea, after dark, or at the intersection of the two.</p>
+</footer>
+
+<script src="/js/site.js"></script>
+<script>
+  async function loadAdminPanel() {
+    const container = document.getElementById('admin-content');
+    let me;
+    try {
+      const res = await fetch('/api/auth/me');
+      if (!res.ok) throw new Error('not logged in');
+      me = await res.json();
+    } catch (err) {
+      container.innerHTML = '<p class="empty-state">Log in with Discord to check your access.</p>';
+      return;
+    }
+    if (me.role !== 'admin') {
+      container.innerHTML = '<p class="empty-state">This console requires admin access. (Signed in as ' + escapeHtml(me.role) + '.)</p>';
+      return;
+    }
+
+    let rulesSections = [];
+    let loreEntries = [];
+    try {
+      const r = await fetch('/api/rules');
+      rulesSections = await r.json();
+    } catch (err) {
+      // leave empty — the rules editor just won't have cards to show
+    }
+    try {
+      const l = await fetch('/api/lore');
+      loreEntries = await l.json();
+    } catch (err) {
+      // leave empty — the lore editor just won't have cards to show
+    }
+
+    const rulesHtml = rulesSections
+      .map(
+        s => `
+        <div class="admin-card">
+          <div class="field">
+            <label>Title (${escapeHtml(s.section_key)})</label>
+            <input type="text" value="${escapeHtml(s.title)}" data-rules-title="${s.section_key}">
+          </div>
+          <div class="field">
+            <label>Content</label>
+            <textarea rows="4" data-rules-content="${s.section_key}">${escapeHtml(s.content)}</textarea>
+          </div>
+          <a class="brass-btn admin-save-rules" href="#" data-key="${s.section_key}">Save</a>
+          <span class="admin-status" data-status-for="${s.section_key}"></span>
+        </div>
+      `
+      )
+      .join('');
+
+    const loreHtml = loreEntries
+      .map(
+        e => `
+        <div class="admin-card" data-lore-card="${e.id}">
+          <div class="field">
+            <label>Era / Date Label</label>
+            <input type="text" value="${escapeHtml(e.era_label)}" data-lore-era="${e.id}">
+          </div>
+          <div class="field">
+            <label>Title</label>
+            <input type="text" value="${escapeHtml(e.title)}" data-lore-title="${e.id}">
+          </div>
+          <div class="field">
+            <label>Content</label>
+            <textarea rows="4" data-lore-content="${e.id}">${escapeHtml(e.content)}</textarea>
+          </div>
+          <div class="field">
+            <label>Timeline Order (lower = earlier)</label>
+            <input type="number" value="${e.sort_order ?? 0}" data-lore-order="${e.id}" style="font-style:normal;">
+          </div>
+          <a class="brass-btn admin-save-lore" href="#" data-id="${e.id}">Save</a>
+          <a class="brass-btn admin-delete-lore" href="#" data-id="${e.id}" style="background:transparent; border:1px solid var(--rust); color:var(--rust-light); margin-left:8px;">Delete</a>
+          <span class="admin-status" data-lore-status-for="${e.id}"></span>
+        </div>
+      `
+      )
+      .join('');
+
+    container.innerHTML = `
+      <h3 class="admin-subhead">Edit Rules &amp; Guidelines</h3>
+      <div class="admin-rules-grid">${rulesHtml || '<p class="empty-state">No rules sections found.</p>'}</div>
+
+      <h3 class="admin-subhead">Lore Timeline</h3>
+      <div class="admin-rules-grid" id="loreCardGrid">${loreHtml || '<p class="empty-state">No lore entries yet — add the first one below.</p>'}</div>
+
+      <div class="admin-card" style="max-width:560px; margin:28px auto 0;">
+        <label class="admin-subhead" style="font-size:16px; margin:0 0 16px;">Add a New Lore Entry</label>
+        <div class="field">
+          <label>Era / Date Label</label>
+          <input type="text" id="newLoreEra" placeholder="e.g. 1891, Founding Era, Present Day">
+        </div>
+        <div class="field">
+          <label>Title</label>
+          <input type="text" id="newLoreTitle">
+        </div>
+        <div class="field">
+          <label>Content</label>
+          <textarea rows="4" id="newLoreContent"></textarea>
+        </div>
+        <div class="field">
+          <label>Timeline Order (lower = earlier)</label>
+          <input type="number" id="newLoreOrder" value="0" style="font-style:normal;">
+        </div>
+        <a class="brass-btn" href="#" id="addLoreBtn" style="display:block; text-align:center;">Add Entry</a>
+        <p class="admin-status" id="newLoreStatus"></p>
+      </div>
+
+      <h3 class="admin-subhead">Post a Dispatch (News)</h3>
+      <form class="petition admin-news-form" id="newsForm">
+        <div class="field">
+          <label>Title</label>
+          <input type="text" name="title" required>
+        </div>
+        <div class="field">
+          <label>Body</label>
+          <textarea name="body" rows="5" required></textarea>
+        </div>
+        <div class="field">
+          <label>Cover Image (optional)</label>
+          <input type="file" name="cover" accept="image/*">
+        </div>
+        <div class="field" style="display:flex; align-items:center; gap:10px;">
+          <input type="checkbox" name="is_published" id="publishCheck" checked>
+          <label for="publishCheck" style="margin:0;">Publish immediately</label>
+        </div>
+        <a class="brass-btn" href="#" id="newsSubmitBtn" style="display:block; text-align:center;">Post Dispatch</a>
+        <p class="admin-status" id="newsStatus"></p>
+      </form>
+    `;
+
+    container.querySelectorAll('.admin-save-rules').forEach(btn => {
+      btn.addEventListener('click', async e => {
+        e.preventDefault();
+        const key = btn.dataset.key;
+        const title = container.querySelector(`[data-rules-title="${key}"]`).value;
+        const content = container.querySelector(`[data-rules-content="${key}"]`).value;
+        const statusEl = container.querySelector(`[data-status-for="${key}"]`);
+        statusEl.textContent = 'Saving…';
+        try {
+          const res = await fetch(`/api/rules/${key}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ title, content, sort_order: 0 }),
+          });
+          statusEl.textContent = res.ok ? 'Saved.' : 'Failed to save.';
+        } catch (err) {
+          statusEl.textContent = 'Failed to save.';
+        }
+      });
+    });
+
+    container.querySelectorAll('.admin-save-lore').forEach(btn => {
+      btn.addEventListener('click', async e => {
+        e.preventDefault();
+        const id = btn.dataset.id;
+        const era_label = container.querySelector(`[data-lore-era="${id}"]`).value;
+        const title = container.querySelector(`[data-lore-title="${id}"]`).value;
+        const content = container.querySelector(`[data-lore-content="${id}"]`).value;
+        const sort_order = Number(container.querySelector(`[data-lore-order="${id}"]`).value) || 0;
+        const statusEl = container.querySelector(`[data-lore-status-for="${id}"]`);
+        statusEl.textContent = 'Saving…';
+        try {
+          const res = await fetch(`/api/lore/${id}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ era_label, title, content, sort_order }),
+          });
+          statusEl.textContent = res.ok ? 'Saved.' : 'Failed to save.';
+        } catch (err) {
+          statusEl.textContent = 'Failed to save.';
+        }
+      });
+    });
+
+    container.querySelectorAll('.admin-delete-lore').forEach(btn => {
+      btn.addEventListener('click', async e => {
+        e.preventDefault();
+        if (!confirm('Delete this lore entry? This cannot be undone.')) return;
+        const id = btn.dataset.id;
+        try {
+          const res = await fetch(`/api/lore/${id}`, { method: 'DELETE' });
+          if (res.ok) {
+            const card = container.querySelector(`[data-lore-card="${id}"]`);
+            if (card) card.remove();
+          }
+        } catch (err) {
+          // leave the card as-is if the delete failed
+        }
+      });
+    });
+
+    document.getElementById('addLoreBtn').addEventListener('click', async e => {
+      e.preventDefault();
+      const era_label = document.getElementById('newLoreEra').value;
+      const title = document.getElementById('newLoreTitle').value;
+      const content = document.getElementById('newLoreContent').value;
+      const sort_order = Number(document.getElementById('newLoreOrder').value) || 0;
+      const statusEl = document.getElementById('newLoreStatus');
+      statusEl.textContent = 'Adding…';
+      try {
+        const res = await fetch('/api/lore', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ era_label, title, content, sort_order }),
+        });
+        if (res.ok) {
+          statusEl.textContent = 'Added — reloading list…';
+          loadAdminPanel();
+        } else {
+          statusEl.textContent = 'Failed to add entry.';
+        }
+      } catch (err) {
+        statusEl.textContent = 'Failed to add entry.';
+      }
+    });
+
+    const newsForm = document.getElementById('newsForm');
+    document.getElementById('newsSubmitBtn').addEventListener('click', async e => {
+      e.preventDefault();
+      const statusEl = document.getElementById('newsStatus');
+      const formData = new FormData();
+      formData.append('title', newsForm.title.value);
+      formData.append('body', newsForm.body.value);
+      formData.append('is_published', newsForm.is_published.checked ? 'true' : '');
+      if (newsForm.cover.files[0]) formData.append('cover', newsForm.cover.files[0]);
+      statusEl.textContent = 'Posting…';
+      try {
+        const res = await fetch('/api/news', { method: 'POST', body: formData });
+        if (res.ok) {
+          statusEl.textContent = 'Posted.';
+          newsForm.reset();
+        } else {
+          const data = await res.json().catch(() => ({}));
+          statusEl.textContent = data.error || 'Failed to post.';
+        }
+      } catch (err) {
+        statusEl.textContent = 'Failed to post.';
+      }
+    });
+  }
+
+  loadAdminPanel();
+</script>
+
+</body>
+</html>
